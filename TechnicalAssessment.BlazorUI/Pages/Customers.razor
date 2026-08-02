@@ -1,0 +1,124 @@
+@page "/customers"
+
+@using System.Net.Http.Json
+@using TechnicalAssessment.BlazorUI.Models
+
+@inject HttpClient Http
+
+
+<h3>Customers</h3>
+
+
+<div>
+    <input 
+        placeholder="Search by name"
+        @bind="searchText"
+        @bind:event="oninput" />
+
+
+    <button @onclick="LoadCustomers">
+        Search
+    </button>
+</div>
+
+
+@if (isLoading)
+{
+    <p>Loading customers...</p>
+}
+else if (customers.Count == 0)
+{
+    <p>No customers found.</p>
+}
+else
+{
+    <table class="table">
+
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>KYC Status</th>
+                <th>Date Of Birth</th>
+            </tr>
+        </thead>
+
+
+        <tbody>
+
+        @foreach (var customer in customers)
+        {
+            <tr>
+                <td>
+                    @customer.FirstName @customer.LastName
+                </td>
+
+                <td>
+                    @customer.Email
+                </td>
+
+                <td>
+                    @customer.KYCStatus
+                </td>
+
+                <td>
+                    @customer.DateOfBirth.ToShortDateString()
+                </td>
+            </tr>
+        }
+
+        </tbody>
+
+    </table>
+}
+
+
+
+@code {
+
+    private List<CustomerDto> customers = new();
+
+    private string searchText = string.Empty;
+
+    private bool isLoading = false;
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCustomers();
+    }
+
+
+
+    private async Task LoadCustomers()
+    {
+        try
+        {
+            isLoading = true;
+
+
+            var url = "api/customers";
+
+
+            if (!string.IsNullOrWhiteSpace(searchText))
+            {
+                url += $"?search={searchText}";
+            }
+
+
+            customers =
+                await Http.GetFromJsonAsync<List<CustomerDto>>(url)
+                ?? new List<CustomerDto>();
+
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}
