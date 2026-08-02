@@ -101,15 +101,13 @@ else
         {
             isLoading = true;
 
-
-            var url = "api/customers";
-
+            // Use full URL to API endpoint.
+            var url = "http://localhost:5135/api/customers";
 
             if (!string.IsNullOrWhiteSpace(searchText))
             {
                 url += $"?search={searchText}";
             }
-
 
             customers =
                 await Http.GetFromJsonAsync<List<CustomerDto>>(url)
