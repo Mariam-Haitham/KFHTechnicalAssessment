@@ -49,10 +49,10 @@
         <form @onsubmit="HandleTransaction">
             <div class="mb-3">
                 <label class="form-label">Transaction Type</label>
-                <select class="form-select" @bind="transactionType" @onchange="OnTransactionTypeChanged">
-                    <option value="0">Deposit</option>
-                    <option value="1">Withdrawal</option>
-                    <option value="2">Transfer</option>
+                <select class="form-select" @onchange="OnTransactionTypeChanged">
+                    <option value="0" selected="@(transactionType == 0)">Deposit</option>
+                    <option value="1" selected="@(transactionType == 1)">Withdrawal</option>
+                    <option value="2" selected="@(transactionType == 2)">Transfer</option>
                 </select>
             </div>
 
