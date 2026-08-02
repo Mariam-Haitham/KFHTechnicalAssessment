@@ -60,7 +60,7 @@ else
                 </td>
 
                 <td>
-                    @customer.KYCStatus
+                    @GetKYCStatusName(customer.KYCStatus)
                 </td>
 
                 <td>
@@ -125,4 +125,13 @@ else
             StateHasChanged();
         }
     }
+
+    // Convert KYC status int to display name.
+    private string GetKYCStatusName(int status) => status switch
+    {
+        0 => "Pending",
+        1 => "Verified",
+        2 => "Rejected",
+        _ => "Unknown"
+    };
 }
