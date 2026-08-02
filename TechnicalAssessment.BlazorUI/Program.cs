@@ -8,6 +8,9 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents();
 
+// Register HttpClient for API calls (used by both server and WASM).
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:7235") });
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
