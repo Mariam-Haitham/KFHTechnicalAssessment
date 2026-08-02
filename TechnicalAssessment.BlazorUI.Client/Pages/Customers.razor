@@ -123,6 +123,8 @@ else
         finally
         {
             isLoading = false;
+            // Notify Blazor that state changed so UI re-renders.
+            StateHasChanged();
         }
     }
 }
