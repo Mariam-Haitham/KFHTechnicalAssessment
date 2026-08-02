@@ -110,7 +110,7 @@
                 <div class="mb-3 alert alert-info">
                     <strong>Balance Check:</strong> Current balance: @fromAccount.Balance.ToString("N2") KWD |
                     After transaction: @FormatBalance(fromAccount.Balance - amount) KWD |
-                    Minimum balance: @MIN_BALANCE.ToString("N2") KWD
+                    Minimum balance: @GetMinimumBalance(fromAccount.AccountType).ToString("N2") KWD
                 </div>
             }
 
@@ -133,7 +133,8 @@
 </div>
 
 @code {
-    private const decimal MIN_BALANCE = 25m;
+    private const decimal DEFAULT_MIN_BALANCE = 100m;
+    private const decimal CHECKING_MIN_BALANCE = 25m;
 
     [Parameter]
     public Guid CustomerId { get; set; }
@@ -223,9 +224,10 @@
                 return;
             }
 
-            if (fromAccount.Balance - amount < MIN_BALANCE)
+            var minimumBalance = GetMinimumBalance(fromAccount.AccountType);
+            if (fromAccount.Balance - amount < minimumBalance)
             {
-                errorMessage = $"Insufficient balance. Minimum balance of {MIN_BALANCE:N2} KWD must be maintained.";
+                errorMessage = $"Insufficient balance. Minimum balance of {minimumBalance:N2} KWD must be maintained.";
                 return;
             }
         }
@@ -304,4 +306,10 @@
     };
 
     private string FormatBalance(decimal balance) => balance.ToString("N2");
+
+    private decimal GetMinimumBalance(int accountType) => accountType switch
+    {
+        1 => CHECKING_MIN_BALANCE, // Checking: 25 KWD
+        _ => DEFAULT_MIN_BALANCE   // Savings, Investment: 100 KWD
+    };
 }
