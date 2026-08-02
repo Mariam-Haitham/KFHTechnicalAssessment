@@ -88,7 +88,9 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadCustomers();
+        isLoading = true;
+        // Fire API call without awaiting — shows page immediately with loading spinner.
+        _ = LoadCustomers();
     }
 
 
