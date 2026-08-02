@@ -161,7 +161,10 @@
                 var accountTransactions = await AccountApiClient.GetAccountTransactionsAsync(account.AccountId);
                 allTransactions.AddRange(accountTransactions);
             }
-            transactions = allTransactions.OrderByDescending(t => t.Timestamp).ToList();
+            transactions = allTransactions
+                .DistinctBy(t => t.TransactionId)
+                .OrderByDescending(t => t.Timestamp)
+                .ToList();
         }
         finally
         {

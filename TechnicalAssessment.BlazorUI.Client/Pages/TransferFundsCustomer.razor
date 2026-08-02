@@ -1,0 +1,303 @@
+@page "/customer/{CustomerId:guid}/transfer"
+@rendermode InteractiveAuto
+
+@using System.Net.Http.Json
+@using TechnicalAssessment.BlazorUI.Client.Models
+@using TechnicalAssessment.BlazorUI.Client.Services
+
+@inject AccountApiClient AccountApiClient
+@inject CustomerApiClient CustomerApiClient
+@inject NavigationManager Navigation
+
+<PageTitle>Transaction</PageTitle>
+
+<div class="container mt-4" style="max-width: 600px;">
+    <h1>New Transaction</h1>
+    <p class="text-muted">Deposit, withdraw, or transfer funds</p>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @errorMessage
+            <button type="button" class="btn-close" @onclick="() => errorMessage = string.Empty"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @successMessage
+            <button type="button" class="btn-close" @onclick="() => successMessage = string.Empty"></button>
+        </div>
+    }
+
+    @if (isLoading)
+    {
+        <div class="alert alert-info">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            Loading your accounts...
+        </div>
+    }
+    else if (accounts.Count < 1)
+    {
+        <div class="alert alert-warning">You need at least 1 account to perform transactions.</div>
+    }
+    else
+    {
+        <form @onsubmit="HandleTransaction">
+            <div class="mb-3">
+                <label class="form-label">Transaction Type</label>
+                <select class="form-select" @bind="transactionType" @onchange="OnTransactionTypeChanged">
+                    <option value="0">Deposit</option>
+                    <option value="1">Withdrawal</option>
+                    <option value="2">Transfer</option>
+                </select>
+            </div>
+
+            @if (transactionType == 1 || transactionType == 2)
+            {
+                <div class="mb-3">
+                    <label class="form-label">From Account</label>
+                    <select class="form-select" @bind="fromAccountId">
+                        <option value="">-- Select Account --</option>
+                        @foreach (var account in accounts)
+                        {
+                            <option value="@account.AccountId">@account.AccountNumber - @GetAccountTypeName(account.AccountType) (@account.Balance.ToString("N2") + " KWD")</option>
+                        }
+                    </select>
+                    @if (string.IsNullOrEmpty(fromAccountId.ToString()) && submitted)
+                    {
+                        <div class="text-danger small">From account is required.</div>
+                    }
+                </div>
+            }
+
+            @if (transactionType == 0 || transactionType == 2)
+            {
+                <div class="mb-3">
+                    <label class="form-label">To Account</label>
+                    <select class="form-select" @bind="toAccountId">
+                        <option value="">-- Select Account --</option>
+                        @foreach (var account in transactionType == 2 ? accounts.Where(a => a.AccountId != fromAccountId) : accounts)
+                        {
+                            <option value="@account.AccountId">@account.AccountNumber - @GetAccountTypeName(account.AccountType) (@account.Balance.ToString("N2") + " KWD")</option>
+                        }
+                    </select>
+                    @if (string.IsNullOrEmpty(toAccountId.ToString()) && submitted)
+                    {
+                        <div class="text-danger small">To account is required.</div>
+                    }
+                </div>
+            }
+
+            <div class="mb-3">
+                <label class="form-label">Amount (KWD)</label>
+                <input type="number" class="form-control" @bind="amount" step="0.01" min="0" max="10000" placeholder="0.00" />
+                @if (amount <= 0 && submitted)
+                {
+                    <div class="text-danger small">Amount must be greater than 0.</div>
+                }
+                @if (amount > 10000)
+                {
+                    <div class="text-danger small">Maximum transaction limit is 10,000 KWD.</div>
+                }
+            </div>
+
+            @if (fromAccount != null && submitted)
+            {
+                <div class="mb-3 alert alert-info">
+                    <strong>Balance Check:</strong> Current balance: @fromAccount.Balance.ToString("N2") KWD |
+                    After transaction: @(fromAccount.Balance - amount).ToString("N2") KWD |
+                    Minimum balance: 100.00 KWD
+                </div>
+            }
+
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                    @if (isSubmitting)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                        <span>Processing...</span>
+                    }
+                    else
+                    {
+                        <span>@GetButtonLabel()</span>
+                    }
+                </button>
+                <a href="/customer/@CustomerId" class="btn btn-secondary">Back to Account</a>
+            </div>
+        </form>
+    }
+</div>
+
+@code {
+    private const decimal MIN_BALANCE = 100m;
+
+    [Parameter]
+    public Guid CustomerId { get; set; }
+
+    private List<AccountDto> accounts = [];
+    private AccountDto? fromAccount;
+    private Guid fromAccountId;
+    private Guid toAccountId;
+    private decimal amount;
+    private int transactionType = 2; // 0 = Deposit, 1 = Withdrawal, 2 = Transfer
+    private bool isLoading = true;
+    private bool isSubmitting = false;
+    private bool submitted = false;
+    private string errorMessage = string.Empty;
+    private string successMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAccountsAsync();
+    }
+
+    private async Task LoadAccountsAsync()
+    {
+        isLoading = true;
+        try
+        {
+            accounts = await AccountApiClient.GetAccountsByCustomerAsync(CustomerId);
+            accounts = accounts.Where(a => a.Status == 0).ToList(); // Only active accounts
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to load accounts.";
+            Console.WriteLine(ex.Message);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void OnTransactionTypeChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int newType))
+        {
+            transactionType = newType;
+            fromAccountId = Guid.Empty;
+            toAccountId = Guid.Empty;
+            amount = 0;
+            submitted = false;
+            fromAccount = null;
+        }
+    }
+
+    private async Task HandleTransaction()
+    {
+        submitted = true;
+        errorMessage = string.Empty;
+        successMessage = string.Empty;
+
+        // Common validation
+        if (amount <= 0)
+        {
+            errorMessage = "Amount must be greater than 0.";
+            return;
+        }
+
+        if (amount > 10000)
+        {
+            errorMessage = "Maximum transaction limit is 10,000 KWD.";
+            return;
+        }
+
+        // Type-specific validation
+        if (transactionType == 1 || transactionType == 2) // Withdrawal or Transfer
+        {
+            if (fromAccountId == Guid.Empty)
+            {
+                errorMessage = "Please select a from account.";
+                return;
+            }
+
+            fromAccount = accounts.FirstOrDefault(a => a.AccountId == fromAccountId);
+            if (fromAccount == null)
+            {
+                errorMessage = "Selected from account not found.";
+                return;
+            }
+
+            if (fromAccount.Balance - amount < MIN_BALANCE)
+            {
+                errorMessage = $"Insufficient balance. Minimum balance of {MIN_BALANCE:N2} KWD must be maintained.";
+                return;
+            }
+        }
+
+        if (transactionType == 0 || transactionType == 2) // Deposit or Transfer
+        {
+            if (toAccountId == Guid.Empty)
+            {
+                errorMessage = "Please select a to account.";
+                return;
+            }
+        }
+
+        if (transactionType == 2 && fromAccountId == toAccountId)
+        {
+            errorMessage = "From and to accounts cannot be the same.";
+            return;
+        }
+
+        isSubmitting = true;
+        try
+        {
+            var success = await AccountApiClient.TransferFundsAsync(fromAccountId, toAccountId, amount);
+            if (success)
+            {
+                var typeName = GetTransactionTypeName(transactionType);
+                successMessage = $"{typeName} of {amount:N2} KWD completed successfully!";
+                fromAccountId = Guid.Empty;
+                toAccountId = Guid.Empty;
+                amount = 0;
+                submitted = false;
+                await Task.Delay(1500);
+                Navigation.NavigateTo($"/customer/{CustomerId}");
+            }
+            else
+            {
+                errorMessage = "Transaction failed. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private string GetButtonLabel() => transactionType switch
+    {
+        0 => "Deposit",
+        1 => "Withdraw",
+        2 => "Transfer",
+        _ => "Submit"
+    };
+
+    private string GetTransactionTypeName(int type) => type switch
+    {
+        0 => "Deposit",
+        1 => "Withdrawal",
+        2 => "Transfer",
+        _ => "Transaction"
+    };
+
+    private string GetAccountTypeName(int type) => type switch
+    {
+        0 => "Savings",
+        1 => "Checking",
+        2 => "Investment",
+        _ => "Unknown"
+    };
+}
