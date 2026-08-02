@@ -9,7 +9,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
 
 // Register HttpClient for API calls (used by both server and WASM).
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:7235") });
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5135") });
 
 var app = builder.Build();
 

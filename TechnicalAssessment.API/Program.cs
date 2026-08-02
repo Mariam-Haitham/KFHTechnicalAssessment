@@ -9,7 +9,7 @@ builder.Services.AddControllers();
 // Add CORS for Blazor WASM client.
 builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>
-        policy.WithOrigins("https://localhost:7149")
+        policy.WithOrigins("https://localhost:7149", "http://localhost:5086")
               .AllowAnyMethod()
               .AllowAnyHeader()));
 
