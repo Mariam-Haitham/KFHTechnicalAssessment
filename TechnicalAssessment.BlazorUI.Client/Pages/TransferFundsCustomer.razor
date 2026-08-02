@@ -64,7 +64,7 @@
                         <option value="">-- Select Account --</option>
                         @foreach (var account in accounts)
                         {
-                            <option value="@account.AccountId">@account.AccountNumber - @GetAccountTypeName(account.AccountType) (@account.Balance.ToString("N2") + " KWD")</option>
+                            <option value="@account.AccountId">@account.AccountNumber - @GetAccountTypeName(account.AccountType) (@account.Balance.ToString("N2") KWD)</option>
                         }
                     </select>
                     @if (string.IsNullOrEmpty(fromAccountId.ToString()) && submitted)
@@ -82,7 +82,7 @@
                         <option value="">-- Select Account --</option>
                         @foreach (var account in transactionType == 2 ? accounts.Where(a => a.AccountId != fromAccountId) : accounts)
                         {
-                            <option value="@account.AccountId">@account.AccountNumber - @GetAccountTypeName(account.AccountType) (@account.Balance.ToString("N2") + " KWD")</option>
+                            <option value="@account.AccountId">@account.AccountNumber - @GetAccountTypeName(account.AccountType) (@account.Balance.ToString("N2") KWD)</option>
                         }
                     </select>
                     @if (string.IsNullOrEmpty(toAccountId.ToString()) && submitted)
