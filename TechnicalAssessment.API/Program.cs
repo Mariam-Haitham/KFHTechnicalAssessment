@@ -1,8 +1,15 @@
+using Microsoft.EntityFrameworkCore;
+using TechnicalAssessment.API.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
+
+// Register the database.
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite("Data Source=TechnicalAssessment.db"));
+    
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
