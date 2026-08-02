@@ -5,6 +5,7 @@
 @using TechnicalAssessment.BlazorUI.Client.Models
 
 @inject HttpClient Http
+@inject NavigationManager Navigation
 
 <PageTitle>Customers</PageTitle>
 
@@ -52,7 +53,7 @@ else
         {
             <tr>
                 <td>
-                    @customer.FirstName @customer.LastName
+                    <a href="/customer/@customer.CustomerId" class="link-primary">@customer.FirstName @customer.LastName</a>
                 </td>
 
                 <td>

@@ -248,7 +248,9 @@
         isSubmitting = true;
         try
         {
-            var success = await AccountApiClient.TransferFundsAsync(fromAccountId, toAccountId, amount);
+            var fromId = fromAccountId != Guid.Empty ? fromAccountId : (Guid?)null;
+            var toId = toAccountId != Guid.Empty ? toAccountId : (Guid?)null;
+            var success = await AccountApiClient.TransferFundsAsync(fromId, toId, amount);
             if (success)
             {
                 var typeName = GetTransactionTypeName(transactionType);

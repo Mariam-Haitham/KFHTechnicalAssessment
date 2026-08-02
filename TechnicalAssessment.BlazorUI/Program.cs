@@ -1,4 +1,5 @@
 using TechnicalAssessment.BlazorUI.Client.Pages;
+using TechnicalAssessment.BlazorUI.Client.Services;
 using TechnicalAssessment.BlazorUI.Components;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,6 +11,10 @@ builder.Services.AddRazorComponents()
 
 // Register HttpClient for API calls (used by both server and WASM).
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5135") });
+
+// Register API clients (needed for server-side render in InteractiveAuto).
+builder.Services.AddScoped<CustomerApiClient>();
+builder.Services.AddScoped<AccountApiClient>();
 
 var app = builder.Build();
 

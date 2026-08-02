@@ -42,26 +42,59 @@ using (var scope = app.Services.CreateScope())
         context.Customers.AddRange(customers);
         context.SaveChanges();
 
-        // Seed accounts and transactions.
-        var john = customers[0];
-        var jane = customers[1];
+        // Seed accounts for each customer.
+        var accounts = new List<Account>();
 
-        var accounts = new List<Account>
+        // John Doe - 3 accounts
+        accounts.AddRange(new[]
         {
-            new Account { CustomerId = john.CustomerId, AccountNumber = "1001001", AccountType = AccountType.Savings, Balance = 5000 },
-            new Account { CustomerId = john.CustomerId, AccountNumber = "1001002", AccountType = AccountType.Checking, Balance = 2000 },
-            new Account { CustomerId = jane.CustomerId, AccountNumber = "1002001", AccountType = AccountType.Savings, Balance = 8500 },
-            new Account { CustomerId = jane.CustomerId, AccountNumber = "1002002", AccountType = AccountType.Investment, Balance = 15000 }
-        };
+            new Account { CustomerId = customers[0].CustomerId, AccountNumber = "1001001", AccountType = AccountType.Savings, Balance = 5000 },
+            new Account { CustomerId = customers[0].CustomerId, AccountNumber = "1001002", AccountType = AccountType.Checking, Balance = 2000 },
+            new Account { CustomerId = customers[0].CustomerId, AccountNumber = "1001003", AccountType = AccountType.Investment, Balance = 12000 }
+        });
+
+        // Jane Smith - 3 accounts
+        accounts.AddRange(new[]
+        {
+            new Account { CustomerId = customers[1].CustomerId, AccountNumber = "1002001", AccountType = AccountType.Savings, Balance = 8500 },
+            new Account { CustomerId = customers[1].CustomerId, AccountNumber = "1002002", AccountType = AccountType.Checking, Balance = 3500 },
+            new Account { CustomerId = customers[1].CustomerId, AccountNumber = "1002003", AccountType = AccountType.Investment, Balance = 25000 }
+        });
+
+        // Michael Johnson - 2 accounts
+        accounts.AddRange(new[]
+        {
+            new Account { CustomerId = customers[2].CustomerId, AccountNumber = "1003001", AccountType = AccountType.Savings, Balance = 2500 },
+            new Account { CustomerId = customers[2].CustomerId, AccountNumber = "1003002", AccountType = AccountType.Checking, Balance = 1200 }
+        });
+
+        // Sarah Williams - 2 accounts
+        accounts.AddRange(new[]
+        {
+            new Account { CustomerId = customers[3].CustomerId, AccountNumber = "1004001", AccountType = AccountType.Savings, Balance = 6000 },
+            new Account { CustomerId = customers[3].CustomerId, AccountNumber = "1004002", AccountType = AccountType.Investment, Balance = 18500 }
+        });
+
+        // Robert Brown - 3 accounts
+        accounts.AddRange(new[]
+        {
+            new Account { CustomerId = customers[4].CustomerId, AccountNumber = "1005001", AccountType = AccountType.Checking, Balance = 1800 },
+            new Account { CustomerId = customers[4].CustomerId, AccountNumber = "1005002", AccountType = AccountType.Savings, Balance = 7200 },
+            new Account { CustomerId = customers[4].CustomerId, AccountNumber = "1005003", AccountType = AccountType.Investment, Balance = 9500 }
+        });
+
         context.Accounts.AddRange(accounts);
         context.SaveChanges();
 
-        // Seed transactions.
+        // Seed sample transactions.
         var transactions = new List<Transaction>
         {
-            new Transaction { FromAccountId = accounts[0].AccountId, Amount = 500, TransactionType = TransactionType.Withdrawal, Status = TransactionStatus.Completed },
-            new Transaction { ToAccountId = accounts[1].AccountId, Amount = 1000, TransactionType = TransactionType.Deposit, Status = TransactionStatus.Completed },
-            new Transaction { FromAccountId = accounts[0].AccountId, ToAccountId = accounts[2].AccountId, Amount = 2000, TransactionType = TransactionType.Transfer, Status = TransactionStatus.Completed }
+            // John's accounts
+            new Transaction { FromAccountId = accounts[0].AccountId, ToAccountId = accounts[1].AccountId, Amount = 500, TransactionType = TransactionType.Transfer, Status = TransactionStatus.Completed },
+            new Transaction { FromAccountId = accounts[1].AccountId, ToAccountId = accounts[2].AccountId, Amount = 1000, TransactionType = TransactionType.Transfer, Status = TransactionStatus.Completed },
+
+            // Jane's accounts
+            new Transaction { FromAccountId = accounts[3].AccountId, ToAccountId = accounts[4].AccountId, Amount = 2000, TransactionType = TransactionType.Transfer, Status = TransactionStatus.Completed }
         };
         context.Transactions.AddRange(transactions);
         context.SaveChanges();
