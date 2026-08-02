@@ -109,7 +109,7 @@
             {
                 <div class="mb-3 alert alert-info">
                     <strong>Balance Check:</strong> Current balance: @fromAccount.Balance.ToString("N2") KWD |
-                    After transaction: @(fromAccount.Balance - amount).ToString("N2") KWD |
+                    After transaction: @FormatBalance(fromAccount.Balance - amount) KWD |
                     Minimum balance: 100.00 KWD
                 </div>
             }
@@ -300,4 +300,6 @@
         2 => "Investment",
         _ => "Unknown"
     };
+
+    private string FormatBalance(decimal balance) => balance.ToString("N2");
 }
