@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "API",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "TechnicalAssessment.API"],
+      "port": 5135
+    },
+    {
+      "name": "BlazorUI",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "TechnicalAssessment.BlazorUI"],
+      "port": 7149
+    }
+  ]
+}

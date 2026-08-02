@@ -1,0 +1,233 @@
+@page "/customer/{CustomerId:guid}"
+@rendermode InteractiveAuto
+
+@using System.Net.Http.Json
+@using TechnicalAssessment.BlazorUI.Client.Models
+@using TechnicalAssessment.BlazorUI.Client.Services
+
+@inject CustomerApiClient CustomerApiClient
+@inject AccountApiClient AccountApiClient
+@inject NavigationManager Navigation
+
+<PageTitle>Customer Details</PageTitle>
+
+<div class="container mt-4">
+    <h1>Customer Details</h1>
+
+    @if (isLoading)
+    {
+        <div class="alert alert-info">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            Loading customer details...
+        </div>
+    }
+    else if (customer == null)
+    {
+        <div class="alert alert-warning">Customer not found.</div>
+    }
+    else
+    {
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>@customer.FirstName @customer.LastName</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Email:</strong> @customer.Email</p>
+                <p><strong>Date of Birth:</strong> @customer.DateOfBirth.ToShortDateString()</p>
+                <p><strong>KYC Status:</strong> <span class="badge" style="background-color: @GetKYCColor(customer.KYCStatus)">@GetKYCStatusName(customer.KYCStatus)</span></p>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3>Accounts</h3>
+            @if (accounts.Count >= 2)
+            {
+                <a href="/customer/@CustomerId/transfer" class="btn btn-primary btn-sm">
+                    <span class="bi bi-arrow-left-right"></span> Transfer Funds
+                </a>
+            }
+        </div>
+        @if (accounts.Count == 0)
+        {
+            <p>No accounts found.</p>
+        }
+        else
+        {
+            <div class="row">
+                @foreach (var account in accounts)
+                {
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title">@GetAccountTypeName(account.AccountType)</h6>
+                                <p class="card-text">
+                                    <strong>Account #:</strong> @account.AccountNumber<br />
+                                    <strong>Balance:</strong> @account.Balance.ToString("N2") + " KWD"<br />
+                                    <strong>Status:</strong> @GetAccountStatusName(account.Status)<br />
+                                    <strong>Created:</strong> @account.CreatedDate.ToString("yyyy-MM-dd")
+                                </p>
+                                <button class="btn btn-sm btn-primary" @onclick="() => OnViewTransactions(account.AccountId)">View Transactions</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (SelectedAccountId != Guid.Empty)
+        {
+            <h3 class="mt-4">Last 10 Transactions</h3>
+            @if (transactionsLoading)
+            {
+                <div class="alert alert-info">Loading transactions...</div>
+            }
+            else if (transactions.Count == 0)
+            {
+                <p>No transactions found for this account.</p>
+            }
+            else
+            {
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var txn in transactions)
+                        {
+                            <tr>
+                                <td>@txn.Timestamp.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td>@GetTransactionTypeName(txn.TransactionType)</td>
+                                <td>@txn.Amount.ToString("N2") + " KWD"</td>
+                                <td><span class="badge" style="background-color: @GetTransactionStatusColor(txn.Status)">@GetTransactionStatusName(txn.Status)</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        }
+    }
+</div>
+
+@code {
+    [Parameter]
+    public Guid CustomerId { get; set; }
+
+    private CustomerDto? customer;
+    private List<AccountDto> accounts = [];
+    private List<TransactionDto> transactions = [];
+    private Guid SelectedAccountId { get; set; }
+    private bool isLoading = true;
+    private bool transactionsLoading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCustomerAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (SelectedAccountId != Guid.Empty)
+        {
+            await LoadTransactionsAsync();
+        }
+    }
+
+    private async Task LoadCustomerAsync()
+    {
+        isLoading = true;
+        try
+        {
+            customer = await CustomerApiClient.GetCustomerByIdAsync(CustomerId);
+            if (customer != null)
+            {
+                accounts = await AccountApiClient.GetAccountsByCustomerAsync(CustomerId);
+            }
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadTransactionsAsync()
+    {
+        transactionsLoading = true;
+        try
+        {
+            transactions = await AccountApiClient.GetAccountTransactionsAsync(SelectedAccountId);
+        }
+        finally
+        {
+            transactionsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnViewTransactions(Guid accountId)
+    {
+        SelectedAccountId = accountId;
+        await LoadTransactionsAsync();
+    }
+
+    private string GetKYCStatusName(int status) => status switch
+    {
+        0 => "Pending",
+        1 => "Verified",
+        2 => "Rejected",
+        _ => "Unknown"
+    };
+
+    private string GetKYCColor(int status) => status switch
+    {
+        1 => "#28a745",
+        2 => "#dc3545",
+        _ => "#ffc107"
+    };
+
+    private string GetAccountTypeName(int type) => type switch
+    {
+        0 => "Savings",
+        1 => "Checking",
+        2 => "Investment",
+        _ => "Unknown"
+    };
+
+    private string GetAccountStatusName(int status) => status switch
+    {
+        0 => "Active",
+        1 => "Frozen",
+        2 => "Closed",
+        _ => "Unknown"
+    };
+
+    private string GetTransactionTypeName(int type) => type switch
+    {
+        0 => "Deposit",
+        1 => "Withdrawal",
+        2 => "Transfer",
+        _ => "Unknown"
+    };
+
+    private string GetTransactionStatusName(int status) => status switch
+    {
+        0 => "Pending",
+        1 => "Completed",
+        2 => "Failed",
+        _ => "Unknown"
+    };
+
+    private string GetTransactionStatusColor(int status) => status switch
+    {
+        1 => "#28a745",
+        2 => "#dc3545",
+        _ => "#ffc107"
+    };
+}
