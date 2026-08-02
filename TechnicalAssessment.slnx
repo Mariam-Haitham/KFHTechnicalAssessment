@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="TechnicalAssessment.API/TechnicalAssessment.API.csproj" />
+  <Project Path="TechnicalAssessment.BlazorUI.Client/TechnicalAssessment.BlazorUI.Client.csproj" />
+  <Project Path="TechnicalAssessment.BlazorUI/TechnicalAssessment.BlazorUI.csproj" />
+  <Project Path="TechnicalAssessment.Tests/TechnicalAssessment.Tests.csproj" />
+</Solution>
