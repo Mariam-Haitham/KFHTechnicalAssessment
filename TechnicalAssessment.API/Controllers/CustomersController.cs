@@ -26,9 +26,11 @@ public class CustomersController : ControllerBase
 
         if (!string.IsNullOrWhiteSpace(search))
         {
+            // Case-insensitive name search.
+            var searchLower = search.ToLower();
             query = query.Where(c =>
-                c.FirstName.Contains(search) ||
-                c.LastName.Contains(search));
+                c.FirstName.ToLower().Contains(searchLower) ||
+                c.LastName.ToLower().Contains(searchLower));
         }
 
 
