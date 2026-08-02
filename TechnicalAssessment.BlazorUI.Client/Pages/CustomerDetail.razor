@@ -68,7 +68,6 @@
                                     <strong>Status:</strong> @GetAccountStatusName(account.Status)<br />
                                     <strong>Created:</strong> @account.CreatedDate.ToString("yyyy-MM-dd")
                                 </p>
-                                <button class="btn btn-sm btn-primary" @onclick="() => OnViewTransactions(account.AccountId)">View Transactions</button>
                             </div>
                         </div>
                     </div>
@@ -76,41 +75,43 @@
             </div>
         }
 
-        @if (SelectedAccountId != Guid.Empty)
+        <h3 class="mt-4">Transactions</h3>
+        @if (transactionsLoading)
         {
-            <h3 class="mt-4">Last 10 Transactions</h3>
-            @if (transactionsLoading)
-            {
-                <div class="alert alert-info">Loading transactions...</div>
-            }
-            else if (transactions.Count == 0)
-            {
-                <p>No transactions found for this account.</p>
-            }
-            else
-            {
-                <table class="table table-sm">
-                    <thead>
+            <div class="alert alert-info">
+                <div class="spinner-border spinner-border-sm me-2"></div>
+                Loading transactions...
+            </div>
+        }
+        else if (transactions.Count == 0)
+        {
+            <p>No transactions found.</p>
+        }
+        else
+        {
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Account</th>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var txn in transactions)
+                    {
                         <tr>
-                            <th>Date</th>
-                            <th>Type</th>
-                            <th>Amount</th>
-                            <th>Status</th>
+                            <td>@GetAccountNumber(txn)</td>
+                            <td>@txn.Timestamp.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>@GetTransactionTypeName(txn.TransactionType)</td>
+                            <td>@txn.Amount.ToString("N2") + " KWD"</td>
+                            <td><span class="badge" style="background-color: @GetTransactionStatusColor(txn.Status)">@GetTransactionStatusName(txn.Status)</span></td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var txn in transactions)
-                        {
-                            <tr>
-                                <td>@txn.Timestamp.ToString("yyyy-MM-dd HH:mm")</td>
-                                <td>@GetTransactionTypeName(txn.TransactionType)</td>
-                                <td>@txn.Amount.ToString("N2") + " KWD"</td>
-                                <td><span class="badge" style="background-color: @GetTransactionStatusColor(txn.Status)">@GetTransactionStatusName(txn.Status)</span></td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            }
+                    }
+                </tbody>
+            </table>
         }
     }
 </div>
@@ -122,21 +123,12 @@
     private CustomerDto? customer;
     private List<AccountDto> accounts = [];
     private List<TransactionDto> transactions = [];
-    private Guid SelectedAccountId { get; set; }
     private bool isLoading = true;
     private bool transactionsLoading = false;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadCustomerAsync();
-    }
-
-    protected override async Task OnParametersSetAsync()
-    {
-        if (SelectedAccountId != Guid.Empty)
-        {
-            await LoadTransactionsAsync();
-        }
     }
 
     private async Task LoadCustomerAsync()
@@ -148,6 +140,7 @@
             if (customer != null)
             {
                 accounts = await AccountApiClient.GetAccountsByCustomerAsync(CustomerId);
+                await LoadAllTransactionsAsync();
             }
         }
         finally
@@ -157,12 +150,18 @@
         }
     }
 
-    private async Task LoadTransactionsAsync()
+    private async Task LoadAllTransactionsAsync()
     {
         transactionsLoading = true;
         try
         {
-            transactions = await AccountApiClient.GetAccountTransactionsAsync(SelectedAccountId);
+            var allTransactions = new List<TransactionDto>();
+            foreach (var account in accounts)
+            {
+                var accountTransactions = await AccountApiClient.GetAccountTransactionsAsync(account.AccountId);
+                allTransactions.AddRange(accountTransactions);
+            }
+            transactions = allTransactions.OrderByDescending(t => t.Timestamp).ToList();
         }
         finally
         {
@@ -171,10 +170,19 @@
         }
     }
 
-    private async Task OnViewTransactions(Guid accountId)
+    private string GetAccountNumber(TransactionDto transaction)
     {
-        SelectedAccountId = accountId;
-        await LoadTransactionsAsync();
+        if (transaction.FromAccountId.HasValue)
+        {
+            var account = accounts.FirstOrDefault(a => a.AccountId == transaction.FromAccountId);
+            if (account != null) return account.AccountNumber;
+        }
+        if (transaction.ToAccountId.HasValue)
+        {
+            var account = accounts.FirstOrDefault(a => a.AccountId == transaction.ToAccountId);
+            if (account != null) return account.AccountNumber;
+        }
+        return "N/A";
     }
 
     private string GetKYCStatusName(int status) => status switch
