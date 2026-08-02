@@ -6,6 +6,13 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 
+// Add CORS for Blazor WASM client.
+builder.Services.AddCors(options =>
+    options.AddDefaultPolicy(policy =>
+        policy.WithOrigins("https://localhost:7149")
+              .AllowAnyMethod()
+              .AllowAnyHeader()));
+
 // Register the database.
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite("Data Source=TechnicalAssessment.db"));
@@ -22,6 +29,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors();
 
 app.UseAuthorization();
 
